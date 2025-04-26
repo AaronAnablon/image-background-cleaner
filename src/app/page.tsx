@@ -10,16 +10,14 @@ export default function Page() {
   const [model, setModel] = useState<DeepLabModel | null>(null);
   const isOpenCVReady = useOpenCVReady();
   const [image, setImage] = useState<string | null>(null);
-  const [processedImage, setProcessedImage] = useState<string | null>(null);
-  const [debugImages, setDebugImages] = useState<string[]>([]);
-
 
   const {
     processImage,
     setOriginalImage,
-    debugImages: currentDebugImages,
-    processedImage: currentProcessedImage,
-    isProcessing
+    debugImages,
+    processedImage,
+    isProcessing,
+    originalImage
   } = useDocumentProcess(model, isOpenCVReady);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -36,24 +34,20 @@ export default function Page() {
         reader.onload = (event) => resolve(event.target?.result as string);
         reader.readAsDataURL(file);
       });
-
       setImage(base64);
-      setProcessedImage(null);
-      setDebugImages([]);
     }
   });
 
+  useEffect(() => {
+    if (originalImage) {
+      processImage();
+    }
+  }, [originalImage]);
+
   const handleProcess = async () => {
     if (!image) return;
-    try {
-      setOriginalImage(image);
-      await processImage();
-      setProcessedImage(currentProcessedImage || null);
-      setDebugImages(currentDebugImages);
-    } catch (error) {
-      console.error('Processing error:', error);
-    };
-  }
+    setOriginalImage(image);
+  };
 
   useEffect(() => {
     if (!isOpenCVReady) return;
@@ -126,7 +120,7 @@ export default function Page() {
           <div className="mt-4">
             <button
               onClick={handleProcess}
-              disabled={!model || !isOpenCVReady || !!processedImage || isProcessing}
+              disabled={!model || !isOpenCVReady || isProcessing}
               className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 flex items-center gap-2"
             >
               {isProcessing ? (
@@ -138,7 +132,7 @@ export default function Page() {
                   Processing...
                 </>
               ) : (
-                processedImage ? '✓ Processing Complete' : 'Process Image'
+                'Process Image'
               )}
             </button>
           </div>
